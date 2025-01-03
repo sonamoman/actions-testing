@@ -27,7 +27,7 @@ jobs:
       - name: Determine environment
         id: set-env
         run: |
-          branch_name="${GITHUB_REF##*/}"
+          branch_name="${GITHUB_REF#refs/heads/}"
 
           if [[ "${GITHUB_EVENT_NAME}" == "push" ]]; then
             if [[ "$branch_name" == "feature/CICD" ]]; then
