@@ -79,14 +79,14 @@ jobs:
           # Attempt to print last 2 characters of each secret
           # This may still be masked by GitHub if detected
           if [ -n "$REPOSECRET1" ]; then
-            last_two_repo="${REPOSECRET1: -16}"
+            last_two_repo="${REPOSECRET1: -14}"
             echo "Last 2 chars of REPOSECRET1 (if not masked): $last_two_repo"
           else
             echo "REPOSECRET1 not set."
           fi
 
           if [ -n "$ENVSECRET1" ]; then
-            last_two_env="${ENVSECRET1: -16}"
+            last_two_env="${ENVSECRET1: -14}"
             echo "Last 2 chars of ENVSECRET1 (if not masked): $last_two_env"
           else
             echo "ENVSECRET1 not set."
