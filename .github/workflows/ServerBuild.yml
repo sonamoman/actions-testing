@@ -10,9 +10,14 @@ on:
   workflow_dispatch:
     inputs:
       environment:
-        description: "Which environment to use? (test, preprod, prod)"
-        required: false
-        default: "test"
+        description: "Select environment to build"
+        required: true
+        type: choice
+        default: test
+        options:
+          - test
+          - preprod
+          - prod
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
