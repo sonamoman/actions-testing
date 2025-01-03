@@ -1,0 +1,77 @@
+name: Server Workflow
+
+on:
+  push:
+    branches:
+      - feature/CICD     # We'll map this to "test"
+      - release/*        # We'll map this to "preprod"
+    paths:
+      - 'server/**'      # Only run if something under server/ changes
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Which environment to use? (test, preprod, prod)"
+        required: false
+        default: "test"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  setup-server-environment:
+    runs-on: ubuntu-latest
+    outputs:
+      environment: ${{ steps.set-env.outputs.environment }}
+    steps:
+      - name: Determine environment
+        id: set-env
+        run: |
+          branch_name="${GITHUB_REF##*/}"
+
+          if [[ "${GITHUB_EVENT_NAME}" == "push" ]]; then
+            if [[ "$branch_name" == "feature/CICD" ]]; then
+              envName="test"
+            elif [[ "$branch_name" == release/* ]]; then
+              envName="preprod"
+            else
+              # fallback if push from another branch
+              envName="test"
+            fi
+          else
+            # workflow_dispatch
+            envName="${{ github.event.inputs.environment || 'test' }}"
+          fi
+
+          echo "environment=$envName" >> $GITHUB_OUTPUT
+
+  echo-server-secrets:
+    needs: setup-server-environment
+    runs-on: ubuntu-latest
+    environment: ${{ needs.setup-server-environment.outputs.environment }}
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Echo environment and secrets
+        env:
+          # Repository-level secrets/variables
+          REPOSECRET1: ${{ secrets.REPOSECRET1 }}
+          REPOVAR1: ${{ vars.REPOVAR1 }}
+
+          # Environment-level secrets/variables
+          ENVSECRET1: ${{ secrets.ENVSECRET1 }}
+          ENVVARIABLE1: ${{ vars.ENVVARIABLE1 }}
+
+        run: |
+          echo "----- SERVER BUILD INFO -----"
+          echo "Branch: ${{ github.ref }}"
+          echo "Selected environment: ${{ needs.setup-server-environment.outputs.environment }}"
+
+          echo "Repository-level secret (REPOSECRET1): $REPOSECRET1"
+          echo "Repository-level variable (REPOVAR1): $REPOVAR1"
+
+          echo "Environment-level secret (ENVSECRET1): $ENVSECRET1"
+          echo "Environment-level variable (ENVVARIABLE1): $ENVVARIABLE1"
