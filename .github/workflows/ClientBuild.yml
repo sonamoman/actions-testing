@@ -16,6 +16,7 @@ on:
         default: test
         options:
           - test
+          - test2
           - preprod
           - prod
 
@@ -44,8 +45,14 @@ jobs:
               envName="test"
             fi
           else
-            # workflow_dispatch
-            envName="${{ github.event.inputs.environment || 'test' }}"
+            chosen="${{ github.event.inputs.environment }}"
+            
+            # If chosen starts with "test", use "test" environment
+            if [[ "$chosen" =~ ^test ]]; then
+              envName="test"
+            else
+              envName="$chosen"
+            fi
           fi
 
           echo "environment=$envName" >> $GITHUB_OUTPUT
@@ -70,7 +77,16 @@ jobs:
           ENVSECRET1: ${{ secrets.ENVSECRET1 }}
           ENVVARIABLE1: ${{ vars.ENVVARIABLE1 }}
 
+          CLIENT_ECR_URL:   ${{ vars.CLIENT_ECR_URL }}
+          CLIENT_ECR_URL_2: ${{ vars.CLIENT_ECR_URL_2 }}
+
         run: |
+          chosen="${{ github.event.inputs.environment }}"
+          if [[ "$chosen" == "test2" ]]; then
+            docker_image="${CLIENT_ECR_URL_2}:latest"
+          else
+            docker_image="${CLIENT_ECR_URL}:latest"
+          fi
           echo "----- CLIENT BUILD INFO -----"
           echo "Branch: ${{ github.ref }}"
           echo "Selected environment: ${{ needs.setup-client-environment.outputs.environment }}"
@@ -80,6 +96,8 @@ jobs:
 
           echo "Environment-level secret (ENVSECRET1): $ENVSECRET1"
           echo "Environment-level variable (ENVVARIABLE1): $ENVVARIABLE1"
+
+          echo "docker_image: $docker_image"
 
           # Attempt to print Last 14 characters of each secret
           # This may still be masked by GitHub if detected
